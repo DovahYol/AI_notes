@@ -24,9 +24,32 @@
 4. The model reverse the source sentences, by doing so, LSTM's test perplexity dropped from 5.8 to 4.7, and the test BLEU scores of its decoded translations increased from 25.9 to 30.6. Although the average distance between corresponding words in source and target language doesn't change, **minimal time lag** hugely decreased, the first few words are now very close.
 5. After analysis of LSTM hidden states by 2-dimensional PCA projection, it's clear that sentences have similar meanings are close to each other, no matter it's active voice or passive voice.
 
-## 2 BLEU: a Method for Automatic Evaluation of Machine Translation
+## 2 Neural Machine Translation by Jointly Learning to Align and Translate
 
 ### 2.1 L1
+
+1. The paper reads "although it may be possible to use a much larger monolingual corpus to pretrain an encoder.". How he could do it? Use the encoder to predict the next word?
+2. The paper reads "In both cases, we use a multilayer network with a single maxout (Goodfellow *et al.*, 2013) hidden layer to compute the conditional probability of each target word (Pascanu *et al.*, 2014).". What's a maxout hidden layer? I remember the 8th paper I read didn't use maxout hidden layer, it linearly transfroms the hidden state to logits.
+3. I guess RNN Encoder–Decoder (Cho *et al.*,2014a) involves the context vector every time computing the target language hidden state, not the 8th paper, only use the context vector as the target language initial hidden state.
+4. The paper reads, "The model takes a source sentence of 1-of-K coded word vectors as input", what does 1-of-K mean?
+5. The paper reads, "At each update our implementation requires time proportional to the length of the longest sentence in a minibatch.". I don't think so, it requires time proportional to the length square of the longest sentence in a minibatch, because every time you compute the hidden state of the decoder, you should compute corresponding context vector which involves the whole encoder annotations.
+6. This paper seems to have 2 layer for encoder and 1 layer for decoder, which is much shallower than the 8th paper, who employ 4 layers for both encoder and decoder.
+
+### 2.2 L2
+
+1. This paper still proposed a encoder-decoder architecture model, but significantlly it firstly introduced the attention machnism when computing the hidden state of the target language.
+
+2. It employs bidirectional-RNN in encoder and unidirectional-RNN in decoder, just shallow RNN.
+
+   <img src="/Users/dovahyol/Library/Application Support/typora-user-images/image-20230418225827238.png" alt="image-20230418225827238" style="zoom:50%;" />
+
+3. To calculate the probability of target word $ y_i $, it involves $ s_{i - 1}, y_{i - 1}, c_{i} $, just like the ingredients to compute $s_i $. And a maxout layer also shows up.
+
+   <img src="/Users/dovahyol/Library/Application Support/typora-user-images/image-20230418225112953.png" alt="image-20230418225112953" style="zoom:50%;" />
+
+## 3 BLEU: a Method for Automatic Evaluation of Machine Translation
+
+### 3.1 L1
 
 1. adequacy, fidelity and fluency.
 2. The paper reads, "The primary programming task for a BLEU implementor is to compare *n*-grams of the candidate with the *n*-grams of the reference translation and count the number of matches. ". It seems so simple.
@@ -36,7 +59,7 @@
 6. The paper reads, "Currently, case folding is the only text normalization performed before computing the precision.", what's case folding?
 7. The paper reads, "We performed four pairwise t-test comparisons between adjacent systems as ordered by their aggregate average score.". What's t-test?
 
-### 2.2 L2
+### 3.2 L2
 
 1. Human evaluations of machine translation weigh many aspects including adequacy, fidelity and fluency.
 
@@ -56,16 +79,15 @@
    \text{BLEU=BP} \cdot \exp{(\sum_{n=1}^N w_n \log p_n)} \\
    
    \log\text{BLEU=} \min{(1 - \frac{r}{c}, 0)} + \sum_{n = 1}^N w_n \log p_n
-   
    $$
-
+   
 4. Modified n-gram precision already penalizes longer sentences than the reference. Sentence brevity penalizes shorter sentences.
 
 5. We call the closest reference sentence length the "best match length". $ r $ is the test corpus' effective reference length, which is by summing the best match lengths for each candidate sentence in the corpus. $ c $ is the total length of the candidate translation corpus.
 
-## 3 N-gram Language Models
+## 4 N-gram Language Models
 
-### 3.1 L2
+### 4.1 L2
 
 It's a textbook concept from *Speech and Language Processing*. So we just do the L2 notes.
 
@@ -81,7 +103,6 @@ It's a textbook concept from *Speech and Language Processing*. So we just do the
    \text{perplexity}(W) = \sqrt[N]{\prod_{i = 1}^N \frac{1}{P(w_i \mid w_1 \dots w_{i - 1})}}
    $$
    
-
 4. **Smoothing** algorithms provide a more sophisticated way to estimate the probability of n-grams. Commonly used smoothing algorithms for n-grams rely on lower-order n-gram counts through **backoff** or **interpolation**.
 
    1. **Laplace Smoothing**: simply add one to all the n-gram counts.
@@ -96,13 +117,12 @@ It's a textbook concept from *Speech and Language Processing*. So we just do the
       \sum_i \lambda_i = 1
       $$
       
-
    4. **Backoff**: In order to give a correct probability distribution, **discounting** should be involved.
       $$
       P_{\text{BO}}(w_n \mid w_{n-N+1:n-1}) = \begin{cases} P^*(w_n \mid w_{n - N + 1: n - 1}), && \text{if } C(w_{n-N+1:n}) \gt 0 \\
       \alpha(w_{n-N+1:n-1}) P_{\text{BO}}(w_n \mid w_{n - N + 2:n - 1}), && otherwise
       \end{cases}
       $$
-
+   
 5. **Kneser-Ney** smoothing makes use of the probability of a word being a novel **continuation**. The interpolated **Kneser-Ney** smoothing algorithm mixes a discounted probability with a lower-order continuation probability.
 
